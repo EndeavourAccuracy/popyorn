@@ -1,0 +1,11 @@
+# Executables.
+/popyorn
+/popyorn.exe
+
+# Created by IDE's.
+/popyorn.dev
+/popyorn.ico
+/popyorn.layout
+/popyorn.o
+/*private*
+/Makefile.win
