@@ -1,3 +1,8 @@
+v1.0 (December 10, 2022) - Norbert de Jonge
+--------------------
++ Expanded the EXE screen (F2) with base/fight speeds, and triggering.
+* Much better playtest instructions on the hover image.
+
 v0.9b (September 2, 2018) - Norbert de Jonge
 --------------------
 + Initial release.

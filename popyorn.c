@@ -1,5 +1,6 @@
-/* popyorn v0.9b (September 2018)
- * Copyright (C) 2018 Norbert de Jonge <mail@norbertdejonge.nl>
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+/* popyorn v1.0 (December 2022)
+ * Copyright (C) 2018-2022 Norbert de Jonge <nlmdejonge@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -68,8 +69,8 @@
 #define EXIT_NORMAL 0
 #define EXIT_ERROR 1
 #define EDITOR_NAME "popyorn"
-#define EDITOR_VERSION "v0.9b (September 2018)"
-#define COPYRIGHT "Copyright (C) 2018 Norbert de Jonge"
+#define EDITOR_VERSION "v1.0 (December 2022)"
+#define COPYRIGHT "Copyright (C) 2022 Norbert de Jonge"
 #define BIN_DIR "bin"
 #define BACKUP BIN_DIR SLASH "backup.bak"
 #define MAX_PATHFILE 200
@@ -91,6 +92,7 @@
 #define ADJ_BASE_Y 62
 #define MAX_STATUS 100 /*** Cannot be more than MAX_TEXT. ***/
 #define MAX_DATA 720
+#define MAX_WARNING 200
 
 /*** Map window ***/
 #define MAP_BIG_AREA_W 1225
@@ -106,6 +108,13 @@
 #define OFFSET_SKIPPOT 0x4C5A
 /*** BA 22 60 0E 0C 2D [00 05] B9 73 66 06 3B 7C ***/
 #define OFFSET_WINROOM 0x8B4C
+/*** 70 [05] 2B 40 96 4C 70 00 60 1C ***/
+#define OFFSET_SPEEDBASE 0x9F07
+/*** 0C 2D 00 02 B9 76 66 08 70 [06] 2B 40 96 4C 60 06 ***/
+#define OFFSET_SPEEDFIGHT 0x9EFF
+/*** 4E BA FF 70 3E 00 5C 8F 60 16 0C 46 00 10 66 [10] ***/
+#define OFFSET_TRIGGERING 0x10923
+/***/
 /*** 4E BA 02 C2 3B 7C [00 01] BA 64 42 2D A1 24 ***/
 #define OFFSET_STARTLVL 0x3EDE
 
@@ -209,6 +218,9 @@ int iEXEHitPoints;
 int iEXESkipPotions;
 int iEXEWinRoom;
 int iEXEStartLevel;
+int iEXESpeedBase;
+int iEXESpeedFight;
+int iEXETriggering;
 
 /*** This is a level. ***/
 unsigned char sLevelForeground[(ROOMS * TILES) + 2];
@@ -647,6 +659,7 @@ void GetPathFile (void)
 	DIR *dDir;
 	struct dirent *stDirent;
 	char sExtension[100 + 2];
+	char sWarning[MAX_WARNING + 2];
 
 	iFound = 0;
 
@@ -680,6 +693,26 @@ void GetPathFile (void)
 				}
 			}
 		}
+	}
+
+	closedir (dDir);
+
+	if (iFound == 0)
+	{
+		snprintf (sWarning, MAX_WARNING, "Cannot find a .bin disk image in"
+			" directory \"%s\"!", BIN_DIR);
+		printf ("[ WARN ] %s\n", sWarning);
+		SDL_ShowSimpleMessageBox (SDL_MESSAGEBOX_ERROR,
+			"Warning", sWarning, NULL);
+		exit (EXIT_ERROR);
+	}
+
+	/*** Is the file accessible? ***/
+	if (access (sPathFile, R_OK|W_OK) == -1)
+	{
+		printf ("[ WARN ] Cannot access \"%s\": %s!\n",
+			sPathFile, strerror (errno));
+		exit (EXIT_ERROR);
 	}
 }
 /*****************************************************************************/
@@ -1633,6 +1666,7 @@ void InitScreen (void)
 
 	if (TTF_Init() == -1)
 	{
+		printf ("[FAILED] Could not initialize TTF!\n");
 		exit (EXIT_ERROR);
 	}
 
@@ -2181,7 +2215,7 @@ void InitScreen (void)
 									Quit(); break;
 								case 2:
 									iBrokenRoomLinks = BrokenRoomLinks (0);
-									/*** no break ***/
+									iScreen = 1; break;
 								case 3:
 									iScreen = 1; break;
 							}
@@ -2352,7 +2386,7 @@ void InitScreen (void)
 					}
 					ShowScreen (iScreen);
 					break;
-				case SDL_KEYDOWN: /*** http://wiki.libsdl.org/SDL_Keycode ***/
+				case SDL_KEYDOWN: /*** https://wiki.libsdl.org/SDL2/SDL_Keycode ***/
 					switch (event.key.keysym.sym)
 					{
 						case SDLK_F1: if (iScreen == 1) { Help(); } break;
@@ -2606,7 +2640,7 @@ void InitScreen (void)
 									Quit(); break;
 								case 2:
 									iBrokenRoomLinks = BrokenRoomLinks (0);
-									/*** no break ***/
+									iScreen = 1; break;
 								case 3:
 									iScreen = 1; break;
 							}
@@ -2928,8 +2962,9 @@ void InitScreen (void)
 								case 1: Quit(); break;
 								case 2:
 									iBrokenRoomLinks = BrokenRoomLinks (0);
-									/*** no break ***/
-								case 3: iScreen = 1; break;
+									iScreen = 1; break;
+								case 3:
+									iScreen = 1; break;
 							}
 						}
 						if (InArea (0, 0, 0 + 25, 0 + 25) == 1) /*** prev level ***/
@@ -3439,7 +3474,7 @@ void ShowScreen (int iScreenS)
 {
 	int iLoc;
 	char sLevel[MAX_TEXT + 2];
-	char arText[1 + 2][MAX_TEXT + 2];
+	char arText[9 + 2][MAX_TEXT + 2];
 	int iImgDir, iImgX, iImgY;
 	int iUnusedRooms;
 	int iXShow, iYShow;
@@ -4479,7 +4514,7 @@ void InitPopUpSave (void)
 void ShowPopUpSave (void)
 /*****************************************************************************/
 {
-	char arText[2 + 2][MAX_TEXT + 2];
+	char arText[9 + 2][MAX_TEXT + 2];
 
 	/*** faded background ***/
 	ShowImage (imgfaded, 0, 0, "imgfaded", ascreen, iScale, 1);
@@ -4644,7 +4679,7 @@ void ShowTile (int iThing, int iModifier, int iLocation)
 	int iXY[2 + 2];
 	int iShown;
 	int iInfoC;
-	char arText[1 + 2][MAX_TEXT + 2];
+	char arText[9 + 2][MAX_TEXT + 2];
 
 	iThingShow = iThing;
 	if ((iThingShow > 32) && (iThingShow != 0x2B)) { iThingShow-=32; }
@@ -6114,7 +6149,11 @@ void CenterNumber (SDL_Renderer *screen, int iNumber, int iX, int iY,
 	} else {
 		snprintf (sText, MAX_TEXT, "%02X", iNumber);
 	}
-	message = TTF_RenderText_Blended_Wrapped (font20, sText, fore, 0);
+	/* The 100000 is a workaround for 0 being broken. SDL devs have fixed that
+	 * see e.g. https://hg.libsdl.org/SDL_ttf/rev/72b8861dbc01 but
+	 * Ubuntu et al. still ship older sdl2-ttf versions.
+	 */
+	message = TTF_RenderText_Blended_Wrapped (font20, sText, fore, 100000);
 	messaget = SDL_CreateTextureFromSurface (screen, message);
 	if (iHex == 0)
 	{
@@ -6622,7 +6661,7 @@ void ShowRoomsMap (int iRoom, int iX, int iY)
 	int iThing, iMod;
 	float fOffsetX, fOffsetY;
 	float fRoomStartX, fRoomStartY;
-	char arText[1 + 2][MAX_TEXT + 2];
+	char arText[9 + 2][MAX_TEXT + 2];
 
 	/*** Used for looping. ***/
 	int iLoopTile;
@@ -7362,7 +7401,7 @@ void Help (void)
 				case SDL_MOUSEMOTION:
 					iXPos = event.motion.x;
 					iYPos = event.motion.y;
-					if (InArea (79, 344, 79 + 531, 344 + 23) == 1) /*** URL ***/
+					if (InArea (79, 346, 79 + 528, 346 + 19) == 1) /*** URL ***/
 					{
 						SDL_SetCursor (curHand);
 					} else {
@@ -7383,8 +7422,8 @@ void Help (void)
 					{
 						if (InArea (588, 410, 588 + 85, 410 + 32) == 1) /*** OK ***/
 							{ iHelp = 0; }
-						if (InArea (79, 344, 79 + 531, 344 + 23) == 1) /*** URL ***/
-							{ OpenURL ("https://www.norbertdejonge.nl/popyorn/"); }
+						if (InArea (79, 346, 79 + 528, 346 + 19) == 1) /*** URL ***/
+							{ OpenURL ("https://github.com/EndeavourAccuracy/popyorn"); }
 					}
 					ShowHelp();
 					break;
@@ -7917,6 +7956,26 @@ void EXE (void)
 						PlusMinus (&iEXEWinRoom, 232, 105, 1, 24, -1, 0);
 						PlusMinus (&iEXEWinRoom, 302, 105, 1, 24, +1, 0);
 						PlusMinus (&iEXEWinRoom, 317, 105, 1, 24, +10, 0);
+
+						/*** Base speed. ***/
+						PlusMinus (&iEXESpeedBase, 217, 153, 0, 255, -10, 0);
+						PlusMinus (&iEXESpeedBase, 232, 153, 0, 255, -1, 0);
+						PlusMinus (&iEXESpeedBase, 302, 153, 0, 255, +1, 0);
+						PlusMinus (&iEXESpeedBase, 317, 153, 0, 255, +10, 0);
+
+						/*** Fight speed. ***/
+						PlusMinus (&iEXESpeedFight, 217, 177, 0, 255, -10, 0);
+						PlusMinus (&iEXESpeedFight, 232, 177, 0, 255, -1, 0);
+						PlusMinus (&iEXESpeedFight, 302, 177, 0, 255, +1, 0);
+						PlusMinus (&iEXESpeedFight, 317, 177, 0, 255, +10, 0);
+
+						/*** Allow triggering of any tile. ***/
+						if ((InArea (259, 204, 259 + 14, 204 + 14) == 1) && /*** N ***/
+							(iEXETriggering == 1))
+							{ iEXETriggering = 0; PlaySound ("wav/check_box.wav"); }
+						if ((InArea (274, 204, 274 + 14, 204 + 14) == 1) && /*** Y ***/
+							(iEXETriggering == 0))
+							{ iEXETriggering = 1; PlaySound ("wav/check_box.wav"); }
 					}
 					ShowEXE();
 					break;
@@ -7952,7 +8011,7 @@ void ShowEXE (void)
 /*****************************************************************************/
 {
 	SDL_Color clr;
-	char arText[1 + 2][MAX_TEXT + 2];
+	char arText[9 + 2][MAX_TEXT + 2];
 
 	/*** exe ***/
 	ShowImage (imgexe, 0, 0, "imgexe", ascreen, iScale, 1);
@@ -8000,6 +8059,23 @@ void ShowEXE (void)
 	if (iEXEWinRoom == 5) { clr = color_bl; } else { clr = color_blue; }
 	CenterNumber (ascreen, iEXEWinRoom, 245, 105, clr, 0);
 
+	/*** Base speed. ***/
+	if (iEXESpeedBase == 5) { clr = color_bl; } else { clr = color_blue; }
+	CenterNumber (ascreen, iEXESpeedBase, 245, 153, clr, 0);
+
+	/*** Fight speed. ***/
+	if (iEXESpeedFight == 6) { clr = color_bl; } else { clr = color_blue; }
+	CenterNumber (ascreen, iEXESpeedFight, 245, 177, clr, 0);
+
+	/*** Allow triggering of any tile. ***/
+	if (iEXETriggering == 0)
+	{
+		ShowImage (imgsell, 259, 204, "imgsell", ascreen, iScale, 1);
+	} else {
+		ShowImage (imgsell, 274, 204, "imgsell", ascreen, iScale, 1);
+		ShowImage (imgsrs, 274, 204, "imgsrs", ascreen, iScale, 1);
+	}
+
 	/*** refresh screen ***/
 	SDL_RenderPresent (ascreen);
 }
@@ -8036,7 +8112,7 @@ void EXELoad (void)
 		case 0x60: iEXESkipPotions = 1; break;
 		default:
 			printf ("[ WARN ] Unknown potions level status: %lu!\n",
-				BytesAsLU (sData, 2));
+				BytesAsLU (sData, 1));
 			iEXESkipPotions = 0; /*** Fallback. ***/
 			break;
 	}
@@ -8045,6 +8121,30 @@ void EXELoad (void)
 	lseek (iFdEXE, OFFSET_WINROOM, SEEK_SET);
 	ReadFromFile (iFdEXE, "", 2, sData);
 	iEXEWinRoom = BytesAsLU (sData, 2);
+
+	/*** Base speed. ***/
+	lseek (iFdEXE, OFFSET_SPEEDBASE, SEEK_SET);
+	ReadFromFile (iFdEXE, "", 1, sData);
+	iEXESpeedBase = BytesAsLU (sData, 1);
+
+	/*** Fight speed. ***/
+	lseek (iFdEXE, OFFSET_SPEEDFIGHT, SEEK_SET);
+	ReadFromFile (iFdEXE, "", 1, sData);
+	iEXESpeedFight = BytesAsLU (sData, 1);
+
+	/*** Allow triggering of any tile. ***/
+	lseek (iFdEXE, OFFSET_TRIGGERING, SEEK_SET);
+	ReadFromFile (iFdEXE, "", 1, sData);
+	switch (BytesAsLU (sData, 1))
+	{
+		case 0x10: iEXETriggering = 0; break;
+		case 0x0E: iEXETriggering = 1; break;
+		default:
+			printf ("[ WARN ] Unknown triggering: %lu!\n",
+				BytesAsLU (sData, 1));
+			iEXETriggering = 0; /*** Fallback. ***/
+			break;
+	}
 
 	close (iFdEXE);
 }
@@ -8081,6 +8181,22 @@ void EXESave (void)
 	lseek (iFdEXE, OFFSET_WINROOM, SEEK_SET);
 	WriteWord (iFdEXE, iEXEWinRoom);
 
+	/*** Base speed. ***/
+	lseek (iFdEXE, OFFSET_SPEEDBASE, SEEK_SET);
+	WriteByte (iFdEXE, iEXESpeedBase);
+
+	/*** Fight speed. ***/
+	lseek (iFdEXE, OFFSET_SPEEDFIGHT, SEEK_SET);
+	WriteByte (iFdEXE, iEXESpeedFight);
+
+	/*** Allow triggering of any tile. ***/
+	lseek (iFdEXE, OFFSET_TRIGGERING, SEEK_SET);
+	switch (iEXETriggering)
+	{
+		case 0: WriteByte (iFdEXE, 0x10); break;
+		case 1: WriteByte (iFdEXE, 0x0E); break;
+	}
+
 	close (iFdEXE);
 
 	PlaySound ("wav/save.wav");
@@ -8094,6 +8210,11 @@ void UpdateStatusBar (void)
 	if (InArea (217, 83, 217 + 113, 83 + 16) == 1) /*** Skip potions level. ***/
 	{
 		snprintf (sStatus, MAX_STATUS, "%s", "Crack the game?");
+	}
+	if (InArea (40, 203, 40 + 290, 203 + 16) == 1) /*** triggering ***/
+	{
+		snprintf (sStatus, MAX_STATUS, "%s",
+			"If this is enabled, you can point raise/drop buttons to loose floors.");
 	}
 	if (strcmp (sStatus, sStatusOld) != 0) { ShowEXE(); }
 }

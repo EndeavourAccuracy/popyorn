@@ -1,2 +1,2 @@
 HFVExplorer\HFVExplorer.exe
-BasiliskII
+BasiliskIIGUI

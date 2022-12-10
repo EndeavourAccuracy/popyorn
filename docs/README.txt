@@ -10,11 +10,11 @@
 
 ===[1 - ABOUT]=================================================================
 
-popyorn v0.9b (September 2018)
-Copyright (C) 2018 Norbert de Jonge <mail@norbertdejonge.nl>
+popyorn v1.0 (December 2022)
+Copyright (C) 2018-2022 Norbert de Jonge <nlmdejonge@gmail.com>
 
 A level editor of Prince of Persia for the Macintosh.
-The popyorn website can be found at [ http://www.norbertdejonge.nl/popyorn/ ].
+The popyorn website can be found at [ https://github.com/EndeavourAccuracy/popyorn ].
 
 ===[2 - LICENSE/DISCLAIMER]====================================================
 
@@ -32,12 +32,13 @@ Prince of Persia is © Jordan Mechner/Ubisoft.
 The Bitstream Vera font by Jim Lyles is © Bitstream, Inc.
 The Xbox icons are © Jeff Jenkins, CC BY 3.0.
 HFVExplorer is © Lauri Pesonen et al., freeware
+Basilisk II is © Christian Bauer et al., GPL2
 
 ===[3 - USAGE]=================================================================
 
 My apoplexy level editor uses the same GUI.
 Its instructional videos are available at:
-https://www.apoplexy.org/t/
+https://apoplexy.github.io/apoplexysite/
 
 ===[4 - THANKS]================================================================
 
@@ -49,12 +50,12 @@ Thanks: realXCV
 
 ===[5 - FEEDBACK]==============================================================
 
-If popyorn crashes, gets compilation errors or crashes while building, send an e-mail to [ mail@norbertdejonge.nl ]. Make sure to describe exactly what actions triggered the bug and the precise symptoms of the bug. If possible, also include: 'uname -a', 'gcc -v', 'sdl2-config --version', and 'popyorn --version'.
+If popyorn crashes, gets compilation errors or crashes while building, send an e-mail to [ nlmdejonge@gmail.com ]. Make sure to describe exactly what actions triggered the bug and the precise symptoms of the bug. If possible, also include: 'uname -a', 'gcc -v', 'sdl2-config --version', and 'popyorn --version'.
 
 ===[6 - DID YOU CREATE NEW LEVELS?]============================================
 
 Feel free to share your work:
-http://forum.princed.org/
+https://forum.princed.org/
 
 ===[7 - (RE)COMPILING]=========================================================
 
@@ -72,9 +73,9 @@ Windows (32-bit)
 
 1.1 Download
 
-http://sourceforge.net/projects/orwelldevcpp/files/Setup%20Releases/
+https://sourceforge.net/projects/orwelldevcpp/files/Setup%20Releases/
 or
-http://downloads.sourceforge.net/project/orwelldevcpp/Setup%20Releases/
+https://downloads.sourceforge.net/project/orwelldevcpp/Setup%20Releases/
   Dev-Cpp%205.11%20TDM-GCC%204.9.2%20Setup.exe
 
 1.2 Install
@@ -85,11 +86,11 @@ Simply run the executable.
 
 2.1 Download
 
-http://libsdl.org/release/
+https://libsdl.org/release/
   SDL2-devel-2.0.7-mingw.tar.gz
-http://libsdl.org/projects/SDL_ttf/release/
+https://libsdl.org/projects/SDL_ttf/release/
   SDL2_ttf-devel-2.0.14-mingw.tar.gz
-http://libsdl.org/projects/SDL_image/release/
+https://libsdl.org/projects/SDL_image/release/
   SDL2_image-devel-2.0.2-mingw.tar.gz
 
 2.2 Install
@@ -112,6 +113,7 @@ Go to: File->New->Project...
 Basic->Console Application
 C Project
 Name: popyorn
+Save popyorn.dev to the popyorn directory.
 
 Go to: Project->Remove From Project...
 Select main.c and press Delete.
@@ -134,10 +136,10 @@ In the Linker field, add:
 -l"SDL2_ttf.dll"
 
 Go to: Project->Project Options...->Directories
-Select the tab: Include Directories
-Add: C:\Program Files (x86)\Dev-Cpp\MinGW64\i686-w64-mingw32\include\SDL2
 Select the tab: Library Directories
 Add: C:\Program Files (x86)\Dev-Cpp\MinGW64\i686-w64-mingw32\lib
+Select the tab: Include Directories
+Add: C:\Program Files (x86)\Dev-Cpp\MinGW64\i686-w64-mingw32\include\SDL2
 
 Go to: Tools->Compiler Options...->Directories
 Select the tab: Binaries
